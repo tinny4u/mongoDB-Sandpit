@@ -2,14 +2,12 @@ import com.mongodb.Mongo
 import com.mongodb.DB
 import com.mongodb.BasicDBObject
 import com.mongodb.DBCollection
-/**
- * Created with IntelliJ IDEA.
- * User: sean
- * Date: 2/09/12
- * Time: 5:32 PM
- * To change this template use File | Settings | File Templates.
- */
+import com.mongodb.WriteConcern
+import com.mongodb.DBCursor
+
 class ConnectionAndInsert {
+
+    //Tutorial - http://www.mongodb.org/display/DOCS/Java+Tutorial
 
     public static void main(String[] args) {
 
@@ -27,7 +25,11 @@ class ConnectionAndInsert {
 
         Mongo m = new Mongo('localhost')
 
+        m.setWriteConcern(WriteConcern.SAFE)
+
+
         DB db = m.getDB( "mydb" )
+
 
         println 'Stats:'
         db.getStats().entrySet().each {
@@ -57,6 +59,75 @@ class ConnectionAndInsert {
         cols.each {
             println it
         }
+
+        println coll.findOne()
+
+        def start = System.currentTimeMillis()
+
+        for (int i = 0; i < 100; i++) {
+
+            coll.insert(new BasicDBObject().append("i", i))
+        }
+
+        def finish = System.currentTimeMillis()
+
+        println "Insert time: ${finish - start / 1000} secounds"
+
+        println "Document count: ${coll.getCount()}"
+
+
+        DBCursor cursor = coll.find()
+        try {
+            while(cursor.hasNext()) {
+
+                println "${cursor.next()}"
+
+            }
+        } finally {
+            cursor.close()
+        }
+
+        //Basic query
+        BasicDBObject query = new BasicDBObject()
+
+        query.put("i", 71)
+
+        cursor = coll.find(query)
+
+        try {
+            println "Query result:"
+            while(cursor.hasNext()) {
+
+                println "${cursor.next()}"
+
+            }
+        } finally {
+            cursor.close()
+        }
+
+        query = new BasicDBObject()
+
+
+        query.put("j", new BasicDBObject('$ne', 3))
+        query.put("k", new BasicDBObject('$gt', 10))
+
+        cursor = coll.find(query)
+
+        try {
+            println "Regular expression result:"
+            while(cursor.hasNext()) {
+                println cursor.next()
+            }
+        } finally {
+            cursor.close()
+        }
+
+        //Up to "Getting A Set of Documents With a Query" - http://www.mongodb.org/display/DOCS/Java+Tutorial
+
+
+        //drop DB when finished
+        m.dropDatabase("mydb")
+
 
     }
 
